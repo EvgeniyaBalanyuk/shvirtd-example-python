@@ -11,7 +11,7 @@ check_error() {
     fi
 }
 
-# Установка необходимых пакетов
+# Установка необходимых пакетов и подготовка к установке Docker
 echo "Обновление списка пакетов..."
 sudo apt-get update
 check_error "Обновление списка пакетов"
@@ -20,13 +20,34 @@ echo "Установка git..."
 sudo apt-get install -y git
 check_error "Установка git"
 
-echo "Установка Docker..."
-sudo apt-get install -y docker.io
-check_error "Установка Docker"
+# Удаление старых версий Docker и конфликтующих пакетов
+echo "Удаление старых версий Docker и конфликтующих пакетов..."
+sudo apt-get remove -y docker docker-engine docker.io containerd runc
+check_error "Удаление старых версий Docker"
 
-echo "Установка Docker Compose..."
-sudo apt-get install -y docker-compose-plugin
-check_error "Установка Docker Compose"
+# Установка зависимостей для Docker
+echo "Установка зависимостей для Docker..."
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+check_error "Установка зависимостей для Docker"
+
+# Добавление GPG ключа Docker
+echo "Добавление ключа GPG для Docker..."
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+check_error "Добавление ключа GPG для Docker"
+
+# Добавление репозитория Docker
+echo "Добавление репозитория Docker..."
+echo \
+"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+check_error "Добавление репозитория Docker"
+
+# Установка Docker и Docker Compose
+echo "Установка Docker и Docker Compose..."
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+check_error "Установка Docker и Docker Compose"
 
 # Скачивание репозитория
 if [ -d "$PROJECT_DIR" ]; then
